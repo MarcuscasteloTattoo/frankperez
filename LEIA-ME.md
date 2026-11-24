@@ -69,7 +69,7 @@ Eventos do Pixel:
 
 ### Webhook (Make)
 
-**A configurar**: `site.webhook` está vazio (não envia nada). Com a URL preenchida, ao concluir a última pergunta (antes do clique no Direct) o site envia um POST
+Webhook do Francisco em `site.webhook` (`js/conteudo.js`). Ao concluir a última pergunta com dados válidos (antes do clique no Direct), o site envia um POST
 com os campos: `data` (dd/mm/aaaa hh:mm, horário da Costa Leste dos EUA), `projeto` e `cliente_anterior` (sempre em inglês), `ideia`, `nome`, `sobrenome`, `telefone`, `email`, `idioma` (en/pt-BR/es) e `pagina`.
 Não reenvia o mesmo lead; se a pessoa editar as respostas e concluir de novo, envia a versão nova.
 
