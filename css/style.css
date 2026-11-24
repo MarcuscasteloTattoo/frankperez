@@ -380,3 +380,7 @@ footer { background: var(--ink); color: var(--hero-fg); border-top: 1px solid rg
   .rv { opacity: 1; clip-path: none; transform: none; }
   .ink-line path { stroke-dashoffset: 0; }
 }
+
+/* proteção de layout: elementos que scripts de terceiros (ex.: Pixel) inserem direto no <body>
+   não ocupam espaço nem empurram a página (evita "Cumulative Layout Shift" no PageSpeed) */
+body > iframe, body > img, body > div[id^="fb"], body > div[class^="fb"] { position: absolute !important; top: 0; left: 0; width: 1px !important; height: 1px !important; overflow: hidden; border: 0; opacity: 0; pointer-events: none; }
