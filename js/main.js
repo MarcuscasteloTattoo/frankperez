@@ -30,17 +30,22 @@ function renderGrid() {
   $("grid").innerHTML = site.portfolio.map((it, i) => {
     const src = pfImg(it), vid = pfVid(it), alt = L.portfolio[i];
     const media = vid
-      ? `<span class="ph"><video src="${vid}" poster="${src}" muted loop playsinline preload="none" aria-label="${esc(alt)}"></video><span class="pf-play" aria-hidden="true"></span></span>`
+      ? `<span class="ph"><video src="${vid}" data-poster="${src.replace(/\.webp$/, "-480.webp")}" muted loop playsinline preload="none" aria-label="${esc(alt)}"></video><span class="pf-play" aria-hidden="true"></span></span>`
       : photo(src, alt, "(min-width: 768px) 23rem, calc(50vw - 2rem)");
     return `<button type="button" class="pf${vid ? " pf-vid" : ""}" data-i="${i}" aria-label="${esc(L.ampliar + alt)}">${media}</button>`;
   }).join("");
+  /* capa do vídeo (versão pequena) só quando ele chega perto da tela, para não pesar o carregamento inicial */
+  const vids = document.querySelectorAll("#grid video");
+  const capa = (v) => { if (!v.poster && v.dataset.poster) v.poster = v.dataset.poster; };
+  if (!("IntersectionObserver" in window)) { vids.forEach(capa); return; }
+  const pio = new IntersectionObserver((en) => en.forEach((e) => { if (e.isIntersecting) { capa(e.target); pio.unobserve(e.target); } }), { rootMargin: "800px 0px" });
+  vids.forEach((v) => pio.observe(v));
   /* vídeo do portfólio: toca (sem som) só enquanto está visível na tela */
-  if (!("IntersectionObserver" in window)) return;
   const vio = new IntersectionObserver((en) => en.forEach((e) => {
     const v = e.target;
     if (e.isIntersecting && !reduced) { v.preload = "auto"; const p = v.play(); if (p) p.catch(() => {}); } else v.pause();
   }), { threshold: 0.35 });
-  document.querySelectorAll("#grid video").forEach((v) => vio.observe(v));
+  vids.forEach((v) => vio.observe(v));
 }
 
 /* --- idiomas --- */
