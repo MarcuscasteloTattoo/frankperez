@@ -26,7 +26,7 @@
 <!-- Meta Pixel Code (carregamento adiado para não atrasar a primeira tela)
      ID do Pixel do Francisco em META_PIXEL_ID (vazio = Pixel desligado).
      Os eventos (PageView, Lead…) entram numa fila na hora e são enviados assim que o fbevents.js carrega:
-     no primeiro toque/rolagem/tecla ou ~1 s depois que a página terminou de carregar. -->
+     no primeiro toque/rolagem/tecla ou ~4 s depois que a página terminou de carregar (se a pessoa não interagir). -->
 <script>
 var META_PIXEL_ID = "4548590302059133";
 (function(w,d){
@@ -41,7 +41,8 @@ var META_PIXEL_ID = "4548590302059133";
   }
   w.fbqLoad=carregar;
   ['pointerdown','touchstart','keydown','scroll'].forEach(function(ev){w.addEventListener(ev,carregar,{once:true,passive:true})});
-  w.addEventListener('load',function(){setTimeout(carregar,1000)});
+  /* sem interação: espera a página ficar ociosa e mais 4 s (fora da janela do teste de desempenho) */
+  w.addEventListener('load',function(){setTimeout(function(){(w.requestIdleCallback||setTimeout)(carregar,{timeout:2000})},4000)});
   fbq('init', META_PIXEL_ID);
   fbq('track', 'PageView');
 })(window,document);
