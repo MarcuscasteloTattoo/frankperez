@@ -244,17 +244,31 @@ $("reviews").addEventListener("click", (e) => {
     }
     return true;
   }
-  /* rastreamento (Meta Pixel / Google Analytics / Tag Manager, se configurados):
-     - form_start / form_step / form_complete: eventos personalizados do funil
-     - lead: CONVERSÃO — formulário completo + clique para ir ao Direct (1 vez por visita) → Pixel "Lead" */
-  function track(ev, extra = {}) {
-    try { if (window.fbq) { fbq(ev === "lead" ? "track" : "trackCustom", ev === "lead" ? "Lead" : ev, extra); if (window.fbqLoad) fbqLoad(); } } catch (_) {}
-    try { if (window.gtag) gtag("event", ev === "lead" ? "generate_lead" : ev, extra); } catch (_) {}
-    try { (window.dataLayer = window.dataLayer || []).push({ event: "qf_" + ev, ...extra }); } catch (_) {}
+  /* rastreamento (Meta Pixel / Google Analytics / Tag Manager, se configurados)
+     Pixel — eventos do funil (personalizados, cada um 1 vez por visita):
+       FormStart            → a pessoa concluiu a 1ª pergunta
+       FormStep1_ProjectType, FormStep2_ReturningClient, FormStep3_Idea, FormStep4_Contact → etapa concluída com resposta válida
+     Pixel — CONVERSÃO "Lead" (padrão): só quando as 4 etapas foram concluídas com dados válidos
+       (nome, sobrenome e telefone válidos). NÃO dispara no clique do botão, para não gerar lead falso.
+       Repete só se a pessoa editar e mudar as respostas.
+     Pixel — "Contact" (padrão): clique no botão do Direct depois do formulário completo (1 vez por visita). */
+  const STEP_EV = ["FormStep1_ProjectType", "FormStep2_ReturningClient", "FormStep3_Idea", "FormStep4_Contact"];
+  function track(ev, extra = {}, std = false, opts) {
+    try { if (window.fbq) { opts ? fbq(std ? "track" : "trackCustom", ev, extra, opts) : fbq(std ? "track" : "trackCustom", ev, extra); if (window.fbqLoad) fbqLoad(); } } catch (_) {}
+    const ga = { Lead: "generate_lead", Contact: "contact" }[ev] || ev;
+    try { if (window.gtag) gtag("event", ga, extra); } catch (_) {}
+    try { (window.dataLayer = window.dataLayer || []).push({ event: "qf_" + ga, ...extra }); } catch (_) {}
   }
+  const once = new Set();
+  const trackOnce = (ev, extra, std) => { if (once.has(ev)) return; once.add(ev); track(ev, extra, std); };
   window.qfTrack = track;
   function send() {
-    track("form_complete", { projeto: TXT.en.qf.types[st.type] });
+    /* conversão Lead: formulário completo e validado (dados reais), 1 vez por conjunto de respostas */
+    const lead = [st.type, st.ret, st.idea.trim(), st.first.trim(), st.last.trim(), st.phone.trim(), st.email.trim()].join("|");
+    if (st.lead !== lead) {
+      st.lead = lead;
+      track("Lead", { content_name: "Tattoo quote form", content_category: TXT.en.qf.types[st.type], returning_client: st.ret === 0 ? "yes" : "no", lang: document.documentElement.lang }, true, { eventID: "lead-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8) });
+    }
     if (!site.webhook) return;
     /* data/hora do cadastro no fuso de Jacksonville (NC), ex.: 13/11/2026 14:05 */
     let data = "";
@@ -275,7 +289,7 @@ $("reviews").addEventListener("click", (e) => {
   }
   function go(dir) {
     st.dir = dir === "next" ? "next" : "back";
-    if (dir === "next") { if (!valid()) return; if (!st.started) { st.started = true; track("form_start"); } st.step++; track("form_step", { step: st.step }); if (st.step === TOTAL) send(); }
+    if (dir === "next") { if (!valid()) return; trackOnce("FormStart", {}); trackOnce(STEP_EV[st.step], { step: st.step + 1, project_type: st.type === null ? "" : TXT.en.qf.types[st.type] }); st.step++; if (st.step === TOTAL) send(); }
     else if (dir === "back") st.step = Math.max(0, st.step - 1);
     else if (dir === "edit") st.step = 0;
     render(true);
@@ -290,9 +304,9 @@ $("reviews").addEventListener("click", (e) => {
     }
     const g = e.target.closest("[data-go]");
     if (g) { if (g.dataset.go === "copy") copy(); else go(g.dataset.go); return; }
-    if (e.target.closest("#cta")) { /* copia ao abrir o Direct (o link abre normalmente) e registra a conversão */
+    if (e.target.closest("#cta")) { /* copia ao abrir o Direct (o link abre normalmente); o Lead já foi contado ao concluir o formulário */
       copy();
-      if (!st.lead) { st.lead = true; track("lead", { content_name: "Instagram Direct", content_category: TXT.en.qf.types[st.type] }); }
+      trackOnce("Contact", { content_name: "Instagram Direct", content_category: TXT.en.qf.types[st.type] }, true);
     }
   });
   box.addEventListener("input", (e) => { const k = e.target.id.replace("qf-", ""); if (k in st) { st[k] = e.target.value; if (e.target.getAttribute("aria-invalid") === "true") err(k, ""); } });

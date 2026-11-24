@@ -56,12 +56,16 @@ Passo a passo, uma pergunta por vez: tipo de projeto → já é cliente? → ide
 No fim, o botão abre o Direct do Instagram (`site.direct`). O link do Direct não aceita texto pronto,
 então ao clicar a mensagem com as respostas é copiada e a pessoa só cola na conversa.
 
-Meta Pixel: **a configurar**. Coloque o ID do Pixel do Francisco em `META_PIXEL_ID`, no `<head>` do `index.html` (vazio = Pixel desligado). Com o ID preenchido, dispara PageView em toda visita.
+Meta Pixel do Francisco: ID **4548590302059133** (`META_PIXEL_ID`, no `<head>` do `index.html`). Dispara PageView em toda visita.
 
-Eventos:
-- `form_start`, `form_step`, `form_complete` — eventos personalizados do funil (não contam como conversão)
-- **`Lead` (conversão)** — dispara quando a pessoa completou o formulário **e** clicou para ir ao Direct; uma vez por visita.
-  Também vai para o Google Analytics (`generate_lead`) e Tag Manager (`qf_lead`), se forem instalados.
+Eventos do Pixel:
+- `FormStart` e `FormStep1_ProjectType`, `FormStep2_ReturningClient`, `FormStep3_Idea`, `FormStep4_Contact` — eventos personalizados do funil,
+  um por etapa concluída com resposta válida (1 vez por visita). Dá para criar uma conversão personalizada para cada um no Gerenciador de Eventos.
+- **`Lead` (conversão)** — dispara só quando as 4 etapas foram concluídas com dados válidos (nome, sobrenome e telefone).
+  Não dispara no clique do botão do Direct, para evitar lead falso. Repete só se a pessoa editar e mudar as respostas.
+  Leva parâmetros `content_category` (tipo de projeto), `returning_client` (yes/no) e `lang`, e um `eventID` único.
+- `Contact` — clique no botão "Send on Instagram Direct" depois do formulário completo (1 vez por visita).
+- Também vão para o Google Analytics (`generate_lead`, `contact`…) e Tag Manager (`qf_…`), se forem instalados.
 
 ### Webhook (Make)
 
